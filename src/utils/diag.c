@@ -63,7 +63,7 @@ void DiagReportRender(const DiagReport *self, const char *underlineColor) {
 
     //
     // Find start of the line containing span.offset
-    // @(invariant) assume invariant #1 here:
+    // @(expect) assume invariant #1 here:
     //
     size_t start = 0;
     for (size_t i = self->span.offset; ; i--) {

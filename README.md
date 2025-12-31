@@ -17,14 +17,15 @@
 
 - [x] Token
     - [x] Token kinds
+    - [ ] Pretty printer
 - [ ] Scanning
     - [ ] Operators
     - [ ] String literals
     - [ ] Raw string literals
-    - [ ] Symbols
+    - [x] Symbols
     - [ ] Integers
     - [ ] Floats
-    - [ ] Keywords
+    - [x] Keywords
 
 ## Diagnostics
 

@@ -98,6 +98,31 @@ static void scanEol(Scanner *self) {
     self->x = 0;
 }
 
+static void scanSymbol(Scanner *self) {
+    size_t offset = self->offset;
+    size_t x = self->x;
+    size_t y = self->y;
+    
+    while (isSymbolFollow(peek(self))) {
+        next(self);
+    }
+
+    // Here, the next item is NOT part of the symbol
+    // First get a span and check the substring
+    size_t length          = self->offset - offset + 1;
+    const Span span        = (Span) {self->src, offset, length, x, y};
+
+    // Check if the substring is a keyword
+    const TokenKind kind = cmpKeywords(self, &span);
+
+    // Create the token and push
+    const Token token = (Token) { kind, span };
+    TLPush(self->tokenList, &token);
+
+    // Advance to point to the next token
+    next(self);
+}
+
 /* Scans a single token if there is one and emits it. If no valid token is
  * found, then a diagnostic is emitted.
  *
@@ -116,6 +141,12 @@ static void scanToken(Scanner *self) {
     
     unsigned char ch = current(self);
     LOG("START: '%c'\n", ch);
+
+    // Look for symbols
+    if (isSymbolStart(ch)) {
+        scanSymbol(self);
+        return;
+    }
 
     TokenKind kind = 0;
     switch (ch) {
@@ -163,6 +194,7 @@ static void scanToken(Scanner *self) {
         );
 
         // Push the diagnostic and then early return
+        self->success = false;
         DEPush(self->diagEngine, &diag);
         next(self);
         return;
@@ -211,7 +243,7 @@ Scanner ScannerNew(
 }
 
 void ScannerScan(Scanner *self, bool *success) {
-    // (@invariant) assume `success` is not nul.
+    // @(expect) assume `success` is not nul.
     if (!success) {
         printf("out pointer is NULL");
         return;

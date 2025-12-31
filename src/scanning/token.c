@@ -13,6 +13,6 @@ void TLPush(TokenList *self, const Token *token) {
     if (!self || !ListIsValid(&self->tokens))
         return;
 
-    // @(invariant) assume ListPush works
+    // @(expect) assume ListPush works
     /* discard */ ListPush(&self->tokens, token);
 }
