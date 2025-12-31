@@ -1,9 +1,14 @@
 #include "scanner.h"
 #include "../utils/list.h"
 #include "../utils/diag.h"
-#include "token.h"
 #include <ctype.h>
 #include <stdio.h>
+
+#ifdef LOG_LEXER
+#define LOG(fmt, ...) fprintf(stderr, fmt __VA_OPT__(,) __VA_ARGS__)
+#else
+#define LOG(fmt, ...) ((void)0)
+#endif
 
 // -------------------------------------------------------------------------- //
 // MARK: Helpers
@@ -17,7 +22,7 @@ static bool isSymbolFollow(char ch) {
     return isalnum(ch) || ch == '_';
 }
 
-static bool isDigitStart(char ch){ 
+static bool isDigitStart(char ch) { 
     return isdigit(ch) || ch == '_';
 }
 
@@ -57,6 +62,7 @@ static unsigned char peek(const Scanner *self) {
 }
 
 static void next(Scanner *self) {
+    LOG("CALL INTO NEXT\n");
     if (self->offset >= self->src->length)
         return;
     self->offset++;
@@ -71,6 +77,7 @@ static bool expect(Scanner *self, unsigned char ch) {
 }
 
 static void skipWhitespace(Scanner *self) {
+    LOG("CALL INTO SKIP WS\n");
     char ch = current(self);
     while (ch == ' ' || ch == '\t' || ch == '\r') {
         next(self);
@@ -80,13 +87,15 @@ static void skipWhitespace(Scanner *self) {
 
 // -------------------------------------------------------------------------- //
 // MARK: Scanner Methods
+// * All scanner methods assume that `self` pointer is valid since they can
+// * only be called from `ScannerScan()` which should check for validity
+// * prior to calling any other methods.
 // -------------------------------------------------------------------------- //
 
 // assumes current -> '\n'
 static void scanEol(Scanner *self) {  
     self->y++;
     self->x = 0;
-    next(self);
 }
 
 /* Scans a single token if there is one and emits it. If no valid token is
@@ -97,6 +106,7 @@ static void scanEol(Scanner *self) {
  * emitted.
  */
 static void scanToken(Scanner *self) {
+    LOG("BEFORE: '%c'\n", current(self));
     skipWhitespace(self);
 
     size_t offset = self->offset;
@@ -105,13 +115,18 @@ static void scanToken(Scanner *self) {
     size_t length = 1;
     
     unsigned char ch = current(self);
-    printf("scan loop: %c\n", ch);
+    LOG("START: '%c'\n", ch);
 
     TokenKind kind = 0;
     switch (ch) {
     case '\0': {
         kind = TK_EOF;
         self->scanning = false;
+        break;
+    }
+    case '\n': {
+        scanEol(self);
+        kind = TK_EOL;
         break;
     }
 
@@ -158,16 +173,16 @@ static void scanToken(Scanner *self) {
     const Token token = (Token) { kind, span };
 
     // Consume the number of characters of the token
-    for (size_t i = length ;; i--) {
-        if (i == 0) { break; }
+    LOG("LENGTH: %zu\n", length);
+    for (size_t i = 0; i < length; i++) {
         next(self);
-    }
+    }   
 
     // Emit the token and return
     TLPush(self->tokenList, &token);
 
     ch = current(self);
-    printf("after loop: %c\n", ch);
+    LOG("END: '%c'\n", ch);
     return;
 }
 
@@ -181,31 +196,39 @@ Scanner ScannerNew(
     TokenList *tokenList
 ) {
     Scanner s = (Scanner) {
-        .src = src,
-        .x = 1,
-        .y = 1,
-        .offset = 0,
-        .tokenList = tokenList,
+        .src        = src,
+        .x          = 1,
+        .y          = 1,
+        .offset     = 0,
+        .tokenList  = tokenList,
         .diagEngine = diagEngine,
-        .scanning = false
+        .scanning   = false,
+        .success    = true,
     };
 
     if (ScannerIsValid(&s)) return s;
     else return (Scanner) {0};
 }
 
-void ScannerScanSource(Scanner *self) {
-    if (!ScannerIsValid(self)) return;
+void ScannerScan(Scanner *self, bool *success) {
+    // (@invariant) assume `success` is not nul.
+    if (!success) {
+        printf("out pointer is NULL");
+        return;
+    }
+    
+    if (!ScannerIsValid(self)) {
+        *success = false;
+        return;
+    }
 
     self->scanning = true;
     while (self->scanning) {
         scanToken(self);
     }
-}
 
-void ScannerDestroy(Scanner *self) {
-    if (!self) return;
-    *self = (Scanner) {0}; // poison
+    *success = self->success;
+    *self = (Scanner) {0}; // poison this scanner
 }
 
 bool ScannerIsValid(const Scanner *self) {

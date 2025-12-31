@@ -7,38 +7,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-
-// -------------------------------------------------------------------------- //
-// MARK: Scanning
-// -------------------------------------------------------------------------- //
-
-typedef struct ScanningResult {
-    bool isOk;
-    TokenList list;
-} ScanningResult;
-
-#define ERR    (ScanningResult) {.isOk = false, 0 };
-#define OK(tl) (ScanningResult) { .isOk = true, .list = (tl) };
-
-ScanningResult scan(const Source *source, DiagEngine *diagEngine) {
-    // Make a token list
-    TokenList tokenList = TLNew();
-    if (!ListIsValid(&tokenList.tokens))
-        return ERR;
-    
-    // Make a new scanner
-    Scanner scanner = ScannerNew(source, diagEngine, &tokenList);
-    if (!ScannerIsValid(&scanner))
-        return ERR;
-
-    // Scan tokens
-    ScannerScanSource(&scanner);
-    ScannerDestroy(&scanner);
-    return OK(tokenList);
-}
-
-#undef ERR
-#undef OK
+#include <stdbool.h>
 
 // -------------------------------------------------------------------------- //
 // MARK: Main
@@ -47,20 +16,30 @@ ScanningResult scan(const Source *source, DiagEngine *diagEngine) {
 int main(int argc, char **argv) {
     InitConsoleColors();
 
-    const Source source = SourceNewFromData("+ += ()");
+    const Source source = SourceNewFromData("+ += ()\n");
     DiagEngine de = DENew();
-    ScanningResult scanRes = scan(&source, &de);
+    TokenList tl = TLNew();
+    
+    if (!ListIsValid(&tl.tokens) || !ListIsValid(&de.diagList)) return 1;
+    
+    // Make a new scanner
+    Scanner scanner = ScannerNew(&source, &de, &tl);
+    if (!ScannerIsValid(&scanner)) return 1;
 
-    printf("%zu\n", scanRes.list.tokens.count);
+    // Scan tokens
+    bool success = false;
+    ScannerScan(&scanner, &success);
+    if (!success) return 1;
 
-    assert(scanRes.isOk);
-    assert(scanRes.list.tokens.count == 5);
+    printf("%zu\n", tl.tokens.count);
+    assert(tl.tokens.count == 6);
 
-    assert(((Token*)ListGet(&scanRes.list.tokens, 0))->kind == TK_PLUS);
-    assert(((Token*)ListGet(&scanRes.list.tokens, 1))->kind == TK_PLUS_EQ);
-    assert(((Token*)ListGet(&scanRes.list.tokens, 2))->kind == TK_LPAR);
-    assert(((Token*)ListGet(&scanRes.list.tokens, 3))->kind == TK_RPAR);
-    assert(((Token*)ListGet(&scanRes.list.tokens, 4))->kind == TK_EOF);
+    assert(((Token*)ListGet(&tl.tokens, 0))->kind == TK_PLUS);
+    assert(((Token*)ListGet(&tl.tokens, 1))->kind == TK_PLUS_EQ);
+    assert(((Token*)ListGet(&tl.tokens, 2))->kind == TK_LPAR);
+    assert(((Token*)ListGet(&tl.tokens, 3))->kind == TK_RPAR);
+    assert(((Token*)ListGet(&tl.tokens, 4))->kind == TK_EOL);
+    assert(((Token*)ListGet(&tl.tokens, 5))->kind == TK_EOF);
     
     return 0;
 }
