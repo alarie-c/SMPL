@@ -15,7 +15,7 @@
 int main(int argc, char **argv) {
     InitConsoleColors();
 
-    const Source source = SourceNewFromData("let a = c + b");
+    const Source source = SourceNewFromData("let a = 1.add(3.5.sub(1))");
     DiagEngine de = DENew();
     TokenList  tl = TLNew();
     

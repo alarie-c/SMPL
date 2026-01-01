@@ -23,9 +23,10 @@
     - [ ] String literals
     - [ ] Raw string literals
     - [x] Symbols
-    - [ ] Integers
-    - [ ] Floats
+    - [x] Integers
+    - [x] Floats
     - [x] Keywords
+    - [ ] Comments
 
 ## Diagnostics
 

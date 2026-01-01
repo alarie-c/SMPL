@@ -99,6 +99,59 @@ static void scanEol(Scanner *self) {
     self->x = 0;
 }
 
+static void scanDigit(Scanner *self) {
+    size_t offset = self->offset;
+    size_t x = self->x;
+    size_t y = self->y;
+    TokenKind kind = TK_INT;
+
+    while (isDigitFollow(peek(self))) {
+        next(self);
+
+        // If the current thing is '.', make sure it's actually a part of this
+        // token before consuming it.
+        if (current(self) == '.' && kind == TK_INT && isdigit(peek(self))) {
+            kind = TK_FLOAT;
+            next(self);
+            continue;
+
+        // Otherwise, emit a separate DOT token
+        } else if (
+            current(self) == '.'
+            && (kind == TK_FLOAT || !isdigit(peek(self))))
+        {
+            // First emit the digit token
+            size_t length          = self->offset - offset;
+            const Span span        = (Span) {self->src, offset, length, x, y};
+
+            // Create the token and push
+            const Token token = (Token) { kind, span };
+            TLPush(self->tokenList, &token);
+
+            // Then emit the DOT token
+            const Span span2   = (Span) {self->src, self->offset, 1, x, y};
+            const Token token2 = (Token) { TK_DOT, span2 };
+            TLPush(self->tokenList, &token2);
+
+            // Then advance once for the next iteration
+            next(self);
+            return;
+        }
+    }
+
+    // Here, the next item is NOT part of the symbol
+    // First get a span and check the substring
+    size_t length          = self->offset - offset + 1;
+    const Span span        = (Span) {self->src, offset, length, x, y};
+
+    // Create the token and push
+    const Token token = (Token) { kind, span };
+    TLPush(self->tokenList, &token);
+
+    // Advance to point to the next token
+    next(self);
+}
+
 static void scanSymbol(Scanner *self) {
     size_t offset = self->offset;
     size_t x = self->x;
@@ -146,6 +199,12 @@ static void scanToken(Scanner *self) {
     // Look for symbols
     if (isSymbolStart(ch)) {
         scanSymbol(self);
+        return;
+    }
+
+    // Look for digits
+    if (isDigitStart(ch)) {
+        scanDigit(self);
         return;
     }
 
