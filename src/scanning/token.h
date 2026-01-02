@@ -70,9 +70,9 @@
     X(TK_EOF, "EOF")
 
 typedef enum TokenKind {
-#define X(name, str) name,
+    #define X(name, str) name,
     TOKEN_LIST
-#undef X
+    #undef X
 } TokenKind;
 
 typedef struct Token {
