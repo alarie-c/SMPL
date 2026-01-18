@@ -2,8 +2,8 @@
 #define EXPR_H
 
 #include "ast.h"
-#include "../utils/list.h"
-#include "../utils/source.h"
+#include "../common/list.h"
+#include "../common/source.h"
 #include <stdint.h>
 
 typedef struct ExprCall {

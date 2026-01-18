@@ -1,8 +1,6 @@
-# SMPL
+# Dagni
 
-> *Statistical Modeling Programming Language*
->
-> "Simple"
+A programming language made for scientific computing, simulation, statistical modeling, and data science.
 
 ## Utilities
 
@@ -28,6 +26,7 @@
     - [x] Floats
     - [x] Keywords
     - [ ] Comments
+    - [ ] Labels
 
 ## Diagnostics
 
@@ -41,37 +40,42 @@
 ## Parsing
 
 - [ ] Expressions
-    - [ ] Atoms/Literals
-        - [ ] Integers
-        - [ ] Floats
-        - [ ] Strings
-        - [ ] Booleans
-    - [ ] Unary Expressions
-        - [ ] Negative
-        - [ ] Not
-        - [ ] Increment/decrement
-    - [ ] Binary Expressions
-        - [ ] Arithmetics
-        - [ ] Comparison
-        - [ ] Logical
-        - [ ] Equality
-        - [ ] Assignment
-    - [ ] Complex Expressions
-        - [ ] If/Else blocks
-        - [ ] For loops
-        - [ ] While loops
-        - [ ] Match blocks
+  - [ ] Atoms/Literals
+    - [ ] Integers
+    - [ ] Floats
+    - [ ] Strings
+    - [ ] Booleans
+    - [ ] Symbols
+  - [ ] Unary Expressions
+    - [ ] Prefix
+    - [ ] Postfix
+  - [ ] Binary Expressions
+    - [ ] Arithmetic
+    - [ ] Comparison
+    - [ ] Logical
+    - [ ] Equality
+    - [ ] Assignment
+- [ ] Statements
+  - [ ] Bindings
+  - [ ] Control Flow
+    - [ ] Continue
+    - [ ] Break
+    - [ ] Return
+    - [ ] If
+    - [ ] For
+    - [ ] While
+    - [ ] Match
 - [ ] Declarations
-    - [ ] Bindings
-    - [ ] Enums
-        - [ ] Tagged unions
-    - [ ] Types
-    - [ ] Protocols
-    - [ ] Impl blocks
-        - [ ] Impl type
-        - [ ] Impl protocl for type
-    - [ ] Function prototypes
-    - [ ] Function definitions 
+  - [ ] Globals
+  - [ ] Enums
+    - [ ] Tagged unions
+  - [ ] Types
+  - [ ] Protocols
+  - [ ] Impl blocks
+    - [ ] Impl type
+    - [ ] Impl protocl for type
+  - [ ] Function prototypes
+  - [ ] Function definitions 
 
 ## Backlog
 

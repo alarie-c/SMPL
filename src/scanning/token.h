@@ -1,8 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "../utils/source.h"
-#include "../utils/list.h"
+#include "../common/source.h"
+#include "../common/list.h"
 
 #define INIT_TOKEN_LIST_CAP 512
 

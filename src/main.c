@@ -1,7 +1,7 @@
-#include "utils/list.h"
-#include "utils/source.h"
-#include "utils/ansi.h"
-#include "utils/diag.h"
+#include "common/list.h"
+#include "common/source.h"
+#include "common/ansi.h"
+#include "common/diag.h"
 #include "scanning/token.h"
 #include "scanning/scanner.h"
 #include <stdio.h>

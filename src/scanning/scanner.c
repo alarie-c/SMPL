@@ -1,6 +1,6 @@
 #include "scanner.h"
-#include "../utils/list.h"
-#include "../utils/diag.h"
+#include "../common/list.h"
+#include "../common/diag.h"
 #include "token.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -219,13 +219,12 @@ static void scanSymbol(Scanner *self) {
     next(self);
 }
 
-/* Scans a single token if there is one and emits it. If no valid token is
- * found, then a diagnostic is emitted.
- *
- * Begins by matching the current character and ends on the first character of
- * the NEXT token. No need to advance from the caller, even if no token is
- * emitted.
- */
+// Scans a single token if there is one and emits it. If no valid token is
+// found, then a diagnostic is emitted.
+//
+// Begins by matching the current character and ends on the first character of
+// the NEXT token. No need to advance from the caller, even if no token is
+// emitted.
 static void scanToken(Scanner *self) {
     LOG("BEFORE: '%c'\n", current(self));
     skipWhitespace(self);

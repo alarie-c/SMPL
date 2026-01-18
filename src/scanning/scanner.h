@@ -1,8 +1,8 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
-#include "../utils/source.h"
-#include "../utils/diag.h"
+#include "../common/source.h"
+#include "../common/diag.h"
 #include "token.h"
 #include <stdbool.h>
 
@@ -22,14 +22,12 @@ typedef struct Scanner {
 Scanner ScannerNew(const Source *src, DiagEngine *diagEngine,
     TokenList *tokenList);
 
-/* Always initialize `success` to `false` at the caller level to ensure 
- * the scanner fails if the `success` pointer is null.
- */
+// Always initialize `success` to `false` at the caller level to ensure 
+// the scanner fails if the `success` pointer is null.
 void ScannerScan(Scanner *self, bool *success);
 
-/* Determines whether or not the scanner is valid, i.e. does it have a valid
- * source file, diag list, token list, etc.
- */
+// Determines whether or not the scanner is valid, i.e. does it have a valid
+// source file, diag list, token list, etc.
 bool ScannerIsValid(const Scanner *self);
 
 #endif

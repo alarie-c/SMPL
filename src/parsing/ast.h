@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../utils/list.h"
+#include "../common/list.h"
 
 #define NULL_AST_ID 0
 
