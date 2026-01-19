@@ -489,7 +489,7 @@ Scanner ScannerNew(
     else return (Scanner) {0};
 }
 
-void ScannerScan(Scanner *self, bool *success) {
+void Scan(Scanner *self, bool *success) {
     // @(expect) assume `success` is not nul.
     if (!success) {
         printf("out pointer is NULL");

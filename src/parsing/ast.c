@@ -29,11 +29,11 @@ bool AstIsValid(const Ast *self) {
         && ListIsValid(&self->root));
 }
 
-ExprId AstExprPush(Ast *self, const Expression *expr) {
-    if (!self || !ListIsValid(&self->exprs))
-        return NULL_AST_ID;
+// ExprId AstExprPush(Ast *self, const Expression *expr) {
+//     if (!self || !ListIsValid(&self->exprs))
+//         return NULL_AST_ID;
 
-    // @(expect) assume ListPush works
-    /* discard */ ListPush(&self->exprs, expr);
-    return self->exprs.count - 1;
-}
+//     // @(expect) assume ListPush works
+//     /* discard */ ListPush(&self->exprs, expr);
+//     return self->exprs.count - 1;
+// }

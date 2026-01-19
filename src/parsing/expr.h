@@ -75,4 +75,7 @@ typedef struct Expression {
 // and returns the index of said expression in the list.
 ExprId AstExprPush(Ast *ast, const Expression *expr);
 
+Expression *AstExprGet(const Ast *self, ExprId id);
+
+
 #endif

@@ -1,5 +1,7 @@
 #include "parser.h"
 #include "../common/list.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 // -------------------------------------------------------------------------- //
 // MARK: Parser Helpers
@@ -28,6 +30,39 @@ void next(Parser *self, size_t k) {
     }
     self->cursor += k;
 }
+
+// Checks that the token at `get(k)` is equivalent to the `kind` provided.
+// Will advance the parser `k` tokens in this case.
+// If not, will push a diagnostic and use `what` in the error report.
+bool assert(Parser *self, size_t k, TokenKind kind, const char *what) {
+    Token *tk = get(self, k);
+    
+    if (tk->kind == kind) {
+        next(self, 1);
+        return true;
+    }
+
+    // Create a diagnostic
+    const DiagReport report = (DiagReport) {
+        .span = tk->span,
+        .message = ""
+    };
+
+    // char buffer[64];
+    // sprintf(buffer, "Expected `%s`", what);
+    const Diagnostic diag = DiagNew(
+        ERR_INVALID_CHAR,
+        what,
+        report
+    );
+
+    DEPush(self->diagEngine, &diag);
+    return false;
+}
+
+// -------------------------------------------------------------------------- //
+// MARK: Expression Parsing
+// -------------------------------------------------------------------------- //
 
 // -------------------------------------------------------------------------- //
 // MARK: Parser API

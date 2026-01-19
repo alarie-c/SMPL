@@ -18,3 +18,7 @@ ExprId AstExprPush(Ast *ast, const Expression *expr) {
     }
     return ast->exprs.count - 1;
 }
+
+Expression *AstExprGet(const Ast *self, ExprId id) {
+    return ListGet(&self->exprs, id);
+}

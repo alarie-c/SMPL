@@ -63,10 +63,9 @@ void DiagReportRender(const DiagReport *self, const char *underlineColor) {
     size_t gutterSize = 2 + countDigits(self->span.y);
 
     // Header
-    printf("in ");
     COLORIZE(ANSI_COLOR_BLUE);
     printf(
-        "%s:%zu:%zu:\n",
+        "  %s:%zu:%zu\n",
         self->span.src->path,
         self->span.y,
         self->span.x
@@ -106,6 +105,7 @@ void DiagReportRender(const DiagReport *self, const char *underlineColor) {
     //
     size_t index = start;
     for (size_t ln = 0; ln < line_count; ln++) {
+        printf("  ");
         size_t eol = fileLen;
 
         // Print line number gutter
@@ -124,6 +124,7 @@ void DiagReportRender(const DiagReport *self, const char *underlineColor) {
         }
 
         printf("\n");
+        printf("  ");
 
         // Print caret gutter
         COLORIZE(ANSI_COLOR_BLUE);
@@ -153,6 +154,7 @@ void DiagReportRender(const DiagReport *self, const char *underlineColor) {
             printf(" %s", self->message);
 
         printf("\n");
+        printf("  ");
 
         // Advance to next line
         index = (eol < fileLen) ? eol + 1 : fileLen;
@@ -204,7 +206,7 @@ void DiagRender(const Diagnostic *self) {
     COLORIZE(foregroundColor);
     printf("%s: ", levelName);
     COLORIZE(ANSI_RESET);
-    printf("%s ", issueName);
+    printf("%s\n", issueName);
 
     DiagReportRender(&self->report, underlineColor);
     
@@ -225,17 +227,17 @@ DiagEngine DENew() {
 }
 
 void DEPush(DiagEngine *engine, const Diagnostic *diag) {
-    /* discard */ ListPush(&engine->diagList, diag);
+    /* discard */ ListPush(&engine->diagnostics, diag);
 }
 
 void DEPrint(FILE *ioStream, const DiagEngine *self) {
-    if (!self || !ioStream || !ListIsValid(&self->diagList)) {
+    if (!self || !ioStream || !ListIsValid(&self->diagnostics)) {
         fprintf(stderr, "<invalid diag engine pointer or IO stream pointer>\n");
         return;
     }
 
-    for (size_t i = 0; i < self->diagList.count; i++) {
-        Diagnostic *diag = (Diagnostic *)ListGet(&self->diagList, i);
+    for (size_t i = 0; i < self->diagnostics.count; i++) {
+        Diagnostic *diag = (Diagnostic *)ListGet(&self->diagnostics, i);
         if (!diag) {
             fprintf(ioStream, "<invalid diag pointer in list>\n");
             continue;
