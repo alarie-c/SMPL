@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #if GROWTH_FACTOR <= 1
 #error GROWTH_FACTOR <= 1 will create infinite realloc loop!
@@ -25,7 +26,10 @@ List ListNew(size_t size, size_t capacity) {
     
     // Attempt allocate
     void *data = (void *)malloc(size * capacity);
-    if (!data) return NULL_LIST;
+    if (!data) {
+        fprintf(stderr, "<ListNew(): allocation failure>\n");
+        return NULL_LIST;
+    }
 
     return (List) {
         .data = data,
@@ -36,13 +40,20 @@ List ListNew(size_t size, size_t capacity) {
 }
 
 void *ListGet(const List *self, size_t i) {
-    if (!ListIsValid(self) || i >= self->count)
+    if (!ListIsValid(self) || i >= self->count) {
+        fprintf(
+            stderr,
+            "<ListGet(): invalid list or %zu is out of bounds>\n", i
+        );
         return NULL;
+    }
+        
     return (char *)self->data + (i * self->size);
 }
 
 void *ListFront(const List *self) {
     if (!ListIsValid(self) || self->count == 0) {
+        fprintf(stderr, "<ListFront(): invalid list or count = 0>\n");
         return NULL;
     }
     return self->data;
@@ -50,36 +61,48 @@ void *ListFront(const List *self) {
 
 void *ListBack(const List *self) {
     if (!ListIsValid(self) || self->count == 0) {
+        fprintf(stderr, "<ListBack(): invalid list or count = 0>\n");
         return NULL;
     }
     return (char *)self->data + ((self->count - 1) * self->size);
 }
 
 ListResult ListPush(List *self, const void *item) {
-    if (!ListIsValid(self) || item == NULL)
+    if (!ListIsValid(self) || item == NULL) {
+        fprintf(stderr, "<ListPush(): null list ptr>\n");
         return LIST_RES_NULLPTR;
+    }
     ListResult res = LIST_RES_OK;
     
     //
     // Grow (if needed)
     //
     if (self->count >= self->capacity) {
+        fprintf(stderr, "<ListNew(): reallaction>\n");
         // Check for overflow
-        if (mulWillOverflowSizet(self->capacity, GROWTH_FACTOR))
+        if (mulWillOverflowSizet(self->capacity, GROWTH_FACTOR)) {
+            fprintf(stderr, "<ListNew(): overflow (1)>\n");
             return LIST_RES_OVERFLOW;
+        }
+            
 
         // Update the capacity and realloc
         size_t newCapacity = self->capacity * GROWTH_FACTOR;
         
         // Check for overflow again
-        if (mulWillOverflowSizet(newCapacity, self->size))
+        if (mulWillOverflowSizet(newCapacity, self->size)) {
+            fprintf(stderr, "<ListNew(): overflow (2)>\n");
             return LIST_RES_OVERFLOW;
-
+        }
+            
         // Reallocate
         void *newData = realloc(self->data, newCapacity * self->size);
         
         // Check for errors with the allocation and update the List
-        if (!newData) return LIST_RES_ERR;
+        if (!newData) {
+            fprintf(stderr, "<ListNew(): allocation failure>\n");
+            return LIST_RES_ERR;
+        }
         self->data     = newData;
         self->capacity = newCapacity;
         res = LIST_RES_REALLOC;

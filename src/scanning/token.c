@@ -63,6 +63,10 @@ void TLPrint(FILE *ioStream, const TokenList *self) {
 
     for (size_t i = 0; i < self->tokens.count; i++) {
         Token *token = (Token *)ListGet(&self->tokens, i);
+        if (token->kind == TK_EOF) {
+            fprintf(ioStream, "<eof>\n");
+            break;
+        }
         if (!token) {
             fprintf(ioStream, "<invalid token pointer in list>\n");
             continue;

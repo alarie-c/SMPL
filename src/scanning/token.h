@@ -58,6 +58,8 @@
     X(TK_INT, "INT")                                                           \
     X(TK_STR, "STR")                                                           \
     X(TK_FLOAT, "FLOAT")                                                       \
+    X(TK_TRUE, "TRUE")                                                         \
+    X(TK_FALSE, "FALSE")                                                       \
                                                                                \
     X(TK_FUN, "FUN")                                                           \
     X(TK_LET, "LET")                                                           \

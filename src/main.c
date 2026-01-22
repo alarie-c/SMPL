@@ -2,6 +2,9 @@
 #include "common/source.h"
 #include "common/ansi.h"
 #include "common/diag.h"
+#include "parsing/ast.h"
+#include "parsing/parser.h"
+#include "parsing/printer.h"
 #include "scanning/token.h"
 #include "scanning/scanner.h"
 #include <stdio.h>
@@ -15,7 +18,7 @@
 int main(int argc, char **argv) {
     InitConsoleColors();
 
-    const Source source = SourceNewFromData("let a = \"Hello, SMPL!");
+    const Source source = SourceNewFromData("!x");
     DiagEngine de = DENew();
     TokenList  tl = TLNew();
     
@@ -26,25 +29,42 @@ int main(int argc, char **argv) {
     if (!ScannerIsValid(&scanner)) return 1;
 
     // Scan tokens
-    bool success = false;
-    Scan(&scanner, &success);
-    if (!success) {
+    bool scanSuccess = false;
+    Scan(&scanner, &scanSuccess);
+    if (!scanSuccess) {
         TLPrint(stderr, &tl);
         DEPrint(stderr, &de);
         return 1;
     }
 
     printf("%zu\n", tl.tokens.count);
-    //assert(tl.tokens.count == 4);
     assert(de.diagnostics.count == 0);
 
     TLPrint(stderr, &tl);
     DEPrint(stderr, &de);
 
-    // assert(((Token*)ListGet(&tl.tokens, 0))->kind == TK_SYMBOL);
-    // assert(((Token*)ListGet(&tl.tokens, 1))->kind == TK_PLUS);
-    // assert(((Token*)ListGet(&tl.tokens, 2))->kind == TK_SYMBOL);
-    // assert(((Token*)ListGet(&tl.tokens, 3))->kind == TK_EOF);
-    
+    // assert(((Token*)ListGet(&tl.tokens, 0))->kind == TK_INT);
+
+    Ast ast = AstNew();
+    if (!AstIsValid(&ast)) {
+        fprintf(stderr, "<invalid AST in main()>\n");
+        return 1;
+    }
+
+    Parser parser = ParserNew(&source, &ast, &de, &tl);
+    if (!ParserIsValid(&parser)) {
+        fprintf(stderr, "<invalid parser in main()>\n");
+        return 1;
+    }
+
+    bool parseSuccess = false;
+    Parse(&parser, &parseSuccess);
+
+    DEPrint(stderr, &de);
+    printf("Expr Count: %zu\n", parser.ast->exprs.count);
+
+    AstPrinter astPrinter = AstPrinterNew(&source, &ast);
+    AstPrintExpr(&astPrinter, 2);
+
     return 0;
 }

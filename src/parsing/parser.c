@@ -1,7 +1,154 @@
 #include "parser.h"
 #include "../common/list.h"
+#include "ast.h"
+#include "expr.h"
+#include <assert.h>
+#include <stdint.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#define POISON(id) if ((id) == NULL_AST_ID) return NULL_AST_ID
+
+#ifdef LOG_PARSER
+#define LOG(fmt, ...) fprintf(stderr, fmt __VA_OPT__(,) __VA_ARGS__)
+#else
+#define LOG(fmt, ...) ((void)0)
+#endif
+
+// -------------------------------------------------------------------------- //
+// MARK: Converters
+// -------------------------------------------------------------------------- //
+
+// Note: In the future, I may write a custom method to replace the length + 1
+// position with zero while the conversion is taking place, to trick strtoll 
+// into thinking there is a null terminator, then replace it with the original
+// value when its done. This would be to avoid heap allocations.
+bool convertIntLiteral(const Span *span, int64_t *valout, Diagnostic *errout) {
+    char *endptr;
+    int errno = 0;
+
+    // Get the substring from the span
+    const Substring str = SpanSubstring(span);
+    if (SubstringIsNull(&str)) {
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "integer token in convertIntLiteral() yielded a null substring",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    }
+
+    // Allocate the substring
+    const char *allocString = SubstringAlloc(&str);
+    if (!allocString) {
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "integer token in convertIntLiteral() failed to allocate substring",
+            (DiagReport) { *span, "this span failed on its allocation attempt" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    }
+
+    // Attempt to do the conversion
+    long long result = strtoll(allocString, &endptr, 10);
+
+    // Check for errors
+    if (endptr == allocString) {
+        // No digits were in the string
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "integer token in convertIntLiteral() has span with no digits!",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    } else if (*endptr != 0) {
+        // Invalid characters in the string
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "integer token in convertIntLiteral() has span with non-digits!",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    } else {
+        // Everything worked
+        *valout = (int64_t)result;
+        return true;
+    }
+}
+
+bool convertFloatLiteral(const Span *span, double *valout, Diagnostic *errout) {
+    char *endptr;
+    int errno = 0;
+
+    // Get the substring from the span
+    const Substring str = SpanSubstring(span);
+    if (SubstringIsNull(&str)) {
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "float token in convertFloatLiteral() yielded a null substring",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    }
+
+    // Allocate the substring
+    const char *allocString = SubstringAlloc(&str);
+    if (!allocString) {
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "float token in convertFloatLiteral()"
+            "failed to allocate substring",
+            (DiagReport) { *span, "this span failed on its allocation attempt" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    }
+
+    // Attempt to do the conversion
+    double result = strtod(allocString, &endptr);
+
+    // Check for errors
+    if (endptr == allocString) {
+        // No digits were in the string
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "float token in convertFloatLiteral() has span with no digits!",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    } else if (*endptr != 0) {
+        // Invalid characters in the string
+        const Diagnostic diag = DiagNew(
+            ERR_INTERNAL,
+            "float token in convertFloatLiteral() has span with non-digits!",
+            (DiagReport) { *span, "" }
+        );
+        // Silly workaround to avoid making Diagnostic members non-const.
+        memcpy(errout, &diag, sizeof(Diagnostic));
+        return false;
+    } else {
+        // Everything worked
+        *valout = result;
+        return true;
+    }
+}
 
 // -------------------------------------------------------------------------- //
 // MARK: Parser Helpers
@@ -20,6 +167,14 @@ Token *get(const Parser *self, size_t k) {
     return (Token *)ListGet(&self->tokenList->tokens, self->cursor + k);
 }
 
+// The token pointer returned from this function is guaraunteed to not be `NULL`
+Token *getBack(const Parser *self, size_t k) {
+    if (self->cursor <= k) {
+        return ((Token *)ListFront(&self->tokenList->tokens));
+    }
+    return (Token *)ListGet(&self->tokenList->tokens, self->cursor - k);
+}
+
 // Advances the parser `k` tokens ahead. Will automatically prevent `cursor` 
 // from being greater than the token list count.
 void next(Parser *self, size_t k) {
@@ -34,7 +189,7 @@ void next(Parser *self, size_t k) {
 // Checks that the token at `get(k)` is equivalent to the `kind` provided.
 // Will advance the parser `k` tokens in this case.
 // If not, will push a diagnostic and use `what` in the error report.
-bool assert(Parser *self, size_t k, TokenKind kind, const char *what) {
+bool expect(Parser *self, size_t k, TokenKind kind, const char *what) {
     Token *tk = get(self, k);
     
     if (tk->kind == kind) {
@@ -63,6 +218,287 @@ bool assert(Parser *self, size_t k, TokenKind kind, const char *what) {
 // -------------------------------------------------------------------------- //
 // MARK: Expression Parsing
 // -------------------------------------------------------------------------- //
+
+// MARK: atom()
+
+// Parses an atomic expression, most generally a literal of some kind.
+// * Integer
+// * Float
+// * String
+// * Symbol
+// * Boolean
+ExprId atom(Parser *self) {
+    LOG("atom()\n");
+    const TokenKind kind = get(self, 0)->kind;
+    const Span      span = get(self, 0)->span;
+
+    switch (kind) {
+
+    // integer
+    // ---------------------------- //
+    case TK_INT: {
+        LOG(">> int\n");
+        Diagnostic diag = {0};
+        int64_t    value = 0;
+
+        // Attempt the conversion here
+        if (!convertIntLiteral(&span, &value, &diag)) {
+            DEPush(self->diagEngine, &diag);
+            break; // return null
+        }
+
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_INT,
+            .data = { .exprInt = value }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+
+    // float
+    // ---------------------------- //
+    case TK_FLOAT: {
+        LOG(">> float\n");
+        Diagnostic diag  = {0};
+        double     value = 0;
+
+        // Attempt the conversion here
+        if (!convertFloatLiteral(&span, &value, &diag)) {
+            DEPush(self->diagEngine, &diag);
+            break; // return null
+        }
+
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_FLOAT,
+            .data = { .exprFloat = value }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+
+    // string
+    // ---------------------------- //
+    case TK_STR: {
+        LOG(">> str\n");
+        Substring substring = SpanSubstring(&span);
+        if (SubstringIsNull(&substring)) {
+            const Diagnostic diag = DiagNew(
+                ERR_INTERNAL,
+                "string token span yielded a null substring",
+                (DiagReport) { span, "" }
+            );
+            DEPush(self->diagEngine, &diag);
+            break; // return null
+        }
+        
+        //
+        // Update the span of the substring so that we exclude the `"`.
+        //
+
+        // Make sure it's actually long enough to do our chopping.
+        if (substring.length < 2) {
+            const Diagnostic diag = DiagNew(
+                ERR_INTERNAL,
+                "string token span yielded a substring shorter than 2 chars!",
+                (DiagReport) { span, "strings should be at least `\"\"`" }
+            );
+            DEPush(self->diagEngine, &diag);
+            break; // return null
+        } 
+        
+        // Make of a copy of this pointer so I can increment it without mutating
+        // the original substring.
+        const char *ptrcpy = substring.data;
+        const Substring string = {
+            .data = ptrcpy++,               // chop prefix  `"`
+            .length = substring.length - 1, // chop postfix `"`
+        };
+        assert(string.length >= 2);
+
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_STR,
+            .data = { .exprString = string }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+
+    // symbol
+    // ---------------------------- //
+    case TK_SYMBOL: {
+        LOG(">> symbol\n");
+        const Substring symbol = SpanSubstring(&span);
+        if (SubstringIsNull(&symbol)) {
+            const Diagnostic diag = DiagNew(
+                ERR_INTERNAL,
+                "symbol token span yielded a null substring",
+                (DiagReport) { span, "" }
+            );
+            DEPush(self->diagEngine, &diag);
+            break; // return null
+        }
+
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_SYMBOL,
+            .data = { .exprSymbol = symbol }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+
+    // booleans
+    // ---------------------------- //
+    case TK_TRUE: {
+        LOG(">> true\n");
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_BOOL,
+            .data = { .exprBool = true }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+    case TK_FALSE: {
+        LOG(">> false\n");
+        const Expression expr = {
+            .span = span,
+            .kind = EXPR_BOOL,
+            .data = { .exprBool = false }
+        };
+
+        // Advance and return
+        next(self, 1);
+        return AstExprPush(self->ast, &expr);
+    }
+
+    default: {
+        LOG(">> no atom found!\n");
+        const Diagnostic diag = DiagNew(
+            ERR_INVALID_SYNTAX,
+            "expected an atom",
+            (DiagReport) { span, "" }
+        );
+        DEPush(self->diagEngine, &diag);
+        break; // return null
+    }    // Add the null terminator
+
+    }
+
+    next(self, 1);
+    return NULL_AST_ID;
+}
+
+// MARK: postfix()
+
+ExprId postfix(Parser *self) {
+    const Span startSpan = get(self, 0)->span;
+    ExprId operand = atom(self);
+    POISON(operand);
+
+    //
+    // Look for a postfix operator AFTER the operand is parsed
+    //
+    const char *op;
+    const TokenKind kind = get(self, 0)->kind;
+    switch (kind) {
+    case TK_PLUS_PLUS:
+        op = "++";
+        break;
+    case TK_MIN_MIN:
+        op = "--";
+        break;
+    default:
+        return operand;
+    }
+
+    //
+    // Complete the expression
+    //
+    const Span endSpan = getBack(self, 1)->span;
+    const Expression expr = {
+        .span = SpanMerge(&startSpan, &endSpan),
+        .kind = EXPR_POSTFIX,
+        .data = { .exprUnary = { operand, op } }
+    };
+
+    // Advance and return
+    next(self, 1);
+    return AstExprPush(self->ast, &expr);
+}
+
+// MARK: prefix()
+
+ExprId prefix(Parser *self) {
+    LOG("prefix()\n");
+    const Span startSpan = get(self, 0)->span;
+    const TokenKind kind = get(self, 0)->kind;
+
+    //
+    // Look for a postfix operator BEFORE the operand is parsed
+    //
+    const char *op;
+    switch (kind) {
+    case TK_PLUS_PLUS:
+        LOG(">> op: ++\n");
+        op = "++";
+        break;
+    case TK_MIN_MIN:
+        LOG(">> op: --\n");
+        op = "--";
+        break;
+    case TK_BANG:
+        LOG(">> op: !\n");
+        op = "!";
+        break;
+    case TK_MIN:
+        LOG(">> op: -\n");
+        op = "-";
+        break;
+    default:
+        return postfix(self);
+    }
+
+    next(self, 1);
+
+    //
+    // Then parse the operand
+    //
+    ExprId operand = postfix(self);
+    POISON(operand);
+    LOG(">> good operand\n");
+
+    //
+    // Complete the expression
+    //
+    const Span endSpan = getBack(self, 1)->span;
+    const Expression expr = {
+        .span = SpanMerge(&startSpan, &endSpan),
+        .kind = EXPR_PREFIX,
+        .data = { .exprUnary = { operand, op } }
+    };
+
+    // Advance and return
+    next(self, 1);
+    return AstExprPush(self->ast, &expr);
+}
+
+ExprId parseExpr(Parser *self) {
+    return prefix(self);
+}
 
 // -------------------------------------------------------------------------- //
 // MARK: Parser API
@@ -101,4 +537,14 @@ bool ParserIsValid(const Parser *self) {
         && ListIsValid(&self->diagEngine->diagnostics)
         && AstIsValid(self->ast)
     );
+}
+
+void Parse(Parser *self, bool *success) {
+    ExprId expr = parseExpr(self);
+    if (expr != NULL_AST_ID) {
+        *success = false;
+        return;
+    }
+
+    *success = true;
 }

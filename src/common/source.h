@@ -48,17 +48,20 @@ typedef struct Substring {
 // - `data == NULL`
 bool SubstringIsNull(const Substring *str);
 
-/* Compares a `Substring` with another `Substring`.
- */
+// Compares a `Substring` with another `Substring`.
 bool SubstringCmpString(Substring *a, const char *b);
 
-/* Compares a `Substring` with a `const char *`.
- */
+// Compares a `Substring` with a `const char *`.
 bool SubstringCmpSubstring(Substring *a, Substring *b);
 
-/* Prints the substring to the specific IO stream.
- */
+// Prints the substring to the specific IO stream.
 void SubstringPrint(FILE *ioStream, const Substring *self);
+
+// Allocates the substring data on the heap by copying bytes from the source
+// data and placing them into heap allocated member.
+//
+// The pointer returned is a null-terminated sequence of bytes.
+char *SubstringAlloc(const Substring *self);
 
 // -------------------------------------------------------------------------- //
 // MARK: Span
@@ -80,5 +83,9 @@ typedef struct Span {
 // `NULL_SUBSTRING` if there is out of bounds access or null arguments.
 // Use `SubstringIsNull()` to confirm.
 Substring SpanSubstring(const Span *span);
+
+Span SpanMerge(const Span *lhs, const Span *rhs);
+
+size_t SpanEnd(const Span *span);
 
 #endif

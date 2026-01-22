@@ -1,5 +1,7 @@
 #include "source.h"
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #define STATIC_PATH_NAME "<static_data>"
 
 // -------------------------------------------------------------------------- //
@@ -18,6 +20,46 @@ Substring SpanSubstring(const Span *span) {
     return (Substring) {
         .data = startptr,
         .length = span->length
+    };
+}
+
+size_t SpanEnd(const Span *span) {
+    if (!span) {
+        fprintf(stderr, "<NULL span pointer in SpanEnd>\n");
+        return 0;
+    }
+
+    return span->offset + span->length;
+}
+
+Span SpanMerge(const Span *lhs, const Span *rhs) {
+    if (!lhs || !rhs) {
+        fprintf(stderr, "<NULL span pointers in SpanMerge>\n");
+        return (Span) {0};
+    }
+
+    if (lhs->src != rhs->src) {
+        fprintf(stderr, "<cannot merge spans of different sources>\n");
+        return (Span) {0};
+    }  
+
+    // Store whichever span comes "first" in the file.
+    const Span *min = lhs->offset <= rhs->offset ? lhs : rhs;
+
+    // Then compute the end of each span and choose the largest one.
+    size_t lhsEnd = SpanEnd(lhs);
+    size_t rhsEnd = SpanEnd(rhs);
+    size_t end    = lhsEnd >= rhsEnd ? lhsEnd : rhsEnd;
+
+    // Then compute the length from that.
+    size_t length = end - min->offset + 1;
+
+    return (Span) {
+        .src = min->src,
+        .offset = min->offset,
+        .length = length,
+        .x = min->x,
+        .y = min->y,
     };
 }
 
@@ -78,4 +120,23 @@ bool SubstringCmpString(Substring *a, const char *b) {
         if (a->data[i] != b[i]) return false;
 
     return true;
+}
+
+char *SubstringAlloc(const Substring *self) {
+    if (!self || SubstringIsNull(self))
+        return NULL;
+
+    size_t allocatedLength   = self->length + 1;
+    
+    // Pre-allocate the space
+    char *data = malloc(sizeof(char) * allocatedLength);
+    if (!data) return NULL;
+
+    // Copy data
+    memcpy(data, self->data, self->length);
+    
+    // Add the null terminator
+    data[self->length] = '\0';
+
+    return data;
 }

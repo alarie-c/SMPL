@@ -12,10 +12,10 @@ typedef size_t StmtId;
 typedef size_t DeclId;
 
 typedef struct Ast {
-    List exprs; // List<Expression>
-    List stmts; // List<Statement>
-    List decls; // List<Declaration>
-    List root;  // List<Declaration> (ordered)
+    List exprs; // `List<Expression>`
+    List stmts; // `List<Statement>`
+    List decls; // `List<Declaration>`
+    List root;  // `List<Declaration>` (ordered)
 } Ast;
 
 Ast AstNew();

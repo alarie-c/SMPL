@@ -11,9 +11,14 @@ const char *ExprKindStr(const ExprKind kind) {
 }
 
 ExprId AstExprPush(Ast *ast, const Expression *expr) {
+    if (!expr || !ast) {
+        fprintf(stderr, "<invalid ast or expression passed to pusher>\n");
+        return 0;
+    }
+    
     ListResult res = ListPush(&ast->exprs, expr);
-    if (res != LIST_RES_OK || res != LIST_RES_REALLOC) {
-        fprintf(stderr, "<error allocating an AST expression>\n");
+    if (res != LIST_RES_OK && res != LIST_RES_REALLOC) {
+        fprintf(stderr, "<error allocating an AST expression: %p>\n", expr);
         return 0;
     }
     return ast->exprs.count - 1;

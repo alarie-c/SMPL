@@ -34,6 +34,8 @@ static bool isDigitFollow(char ch) {
 static TokenKind cmpKeywords(const Scanner *self, const Span *span) {
     Substring str = SpanSubstring(span);
     // Purposefully skip the null check, the `SubstringCmpString()` will do it.
+    if (SubstringCmpString(&str, "true"))     return TK_TRUE;
+    if (SubstringCmpString(&str, "false"))    return TK_FALSE;
     if (SubstringCmpString(&str, "let"))      return TK_LET;
     if (SubstringCmpString(&str, "mut"))      return TK_MUT;
     if (SubstringCmpString(&str, "fun"))      return TK_FUN;

@@ -40,6 +40,8 @@ const char *DiagIssueStringified(DiagIssue self) {
 
     case ERR_INVALID_CHAR:   return "invalid character";
     case ERR_INVALID_STRING: return "invalid string";
+    
+    case ERR_INVALID_SYNTAX: return "invalid syntax";
     }
     return "unknown error";
 }

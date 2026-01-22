@@ -34,7 +34,8 @@ typedef struct ExprBinary ExprAssign;
     X(EXPR_BOOL,     "EXPR_BOOL")                                              \
     X(EXPR_STR,      "EXPR_STR")                                               \
     X(EXPR_CALL,     "EXPR_CALL")                                              \
-    X(EXPR_UNARY,    "EXPR_UNARY")                                             \
+    X(EXPR_POSTFIX,  "EXPR_POSTFIX")                                           \
+    X(EXPR_PREFIX,   "EXPR_PREFIX")                                            \
     X(EXPR_BINARY,   "EXPR_BINARY")                                            \
     X(EXPR_LOGICAL,  "EXPR_LOGICAL")                                           \
     X(EXPR_COMPARE,  "EXPR_COMPARE")                                           \
@@ -54,8 +55,8 @@ typedef union ExprData {
     Substring    exprSymbol;
     int64_t      exprInt;
     double       exprFloat;
-    bool         exprNool;
-    Substring    exprStr;
+    bool         exprBool;
+    Substring    exprString;
     ExprCall     exprCall;
     ExprUnary    exprUnary;
     ExprBinary   exprBinary;

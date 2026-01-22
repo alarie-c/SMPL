@@ -23,6 +23,9 @@ typedef enum DiagIssue {
     /* Lexical errors */
     ERR_INVALID_CHAR,
     ERR_INVALID_STRING,
+
+    /* Parsing errors */
+    ERR_INVALID_SYNTAX,
 } DiagIssue;
 
 // Represents the level of the diagnostic, only `DIAG_LEVEL_ERROR` is capable of 

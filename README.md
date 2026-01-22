@@ -40,12 +40,12 @@ A programming language made for scientific computing, simulation, statistical mo
 ## Parsing
 
 - [ ] Expressions
-  - [ ] Atoms/Literals
-    - [ ] Integers
-    - [ ] Floats
-    - [ ] Strings
-    - [ ] Booleans
-    - [ ] Symbols
+  - [x] Atoms/Literals
+    - [x] Integers
+    - [x] Floats
+    - [x] Strings
+    - [x] Booleans
+    - [x] Symbols
   - [ ] Unary Expressions
     - [ ] Prefix
     - [ ] Postfix
@@ -80,3 +80,4 @@ A programming language made for scientific computing, simulation, statistical mo
 ## Backlog
 
 - [ ] Write safe fatal error and diagnostic raiser for violated invariants.
+- [ ] Document things that are missing documentation.

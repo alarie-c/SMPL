@@ -2,6 +2,8 @@
 #include "ast.h"
 #include "expr.h"
 #include "stdio.h"
+#include <stdio.h>
+#include <stdio.h>
 
 #define SPACES(k)                                                              \
     for (int _i = 0; _i < (k); _i++)                                           \
@@ -36,16 +38,22 @@ bool AstPrinterIsValid(const AstPrinter *self) {
     );
 }
 
-void AstPrintExpr(AstPrinter *self, ExprId id) {
-    //SPACES(self->indent);
+void AstPrintExpr(AstPrinter *self, ExprId id) {    
+    SPACES(self->indent);
     if (!self || !AstPrinterIsValid(self)) {
         printf("<invalid AstPrinter pointer>");
         return;
     }
 
     Expression *expr = AstExprGet(self->ast, id);
+    if (!expr) {
+        fprintf(stderr, "<invalid expr in printer!>\n");
+        return;
+    }
 
     switch (expr->kind) {
+    // atoms
+    // ---------------------------- //
     case EXPR_INT: {
         printf("int(%lli)\n", expr->data.exprInt);
         return;
@@ -62,10 +70,44 @@ void AstPrintExpr(AstPrinter *self, ExprId id) {
     }
     case EXPR_STR: {
         printf("string(");
-        SubstringPrint(stdout, &expr->data.exprStr);
+        SubstringPrint(stdout, &expr->data.exprString);
         printf(")\n");
         return;
     }
+    case EXPR_BOOL: {
+        printf("bool(%s)\n", expr->data.exprBool ? "true" : "false");
+        return;
+    }
+
+    // unaries
+    // ---------------------------- //
+    case EXPR_PREFIX: {
+        printf("prefix(%s\n", expr->data.exprUnary.op);
+        
+        indent(self);
+        AstPrintExpr(self, expr->data.exprUnary.operand);
+        dedent(self);
+        
+        SPACES(self->indent);
+        printf(")\n");
+        return;
+    }
+
+    case EXPR_POSTFIX: {
+        printf("postfix(%s\n", expr->data.exprUnary.op);
+        
+        indent(self);
+        AstPrintExpr(self, expr->data.exprUnary.operand);
+        dedent(self);
+        
+        SPACES(self->indent);
+        printf(")\n");
+        return;
+    }
+
+
+    // binaries
+    // ---------------------------- //
     case EXPR_BINARY: {
         printf("binary(%s,\n", expr->data.exprBinary.op);
         
